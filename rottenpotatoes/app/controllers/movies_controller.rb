@@ -1,13 +1,24 @@
 class MoviesController < ApplicationController
   
   def movie_params
-    params.require(:movie).permit(:title, :rating, :description, :release_date)
+    params.require(:movie).permit(:title, :rating, :description, :release_date, :director)
   end
 
   def show
     id = params[:id] # retrieve movie ID from URI route
     @movie = Movie.find(id) # look up movie by unique ID
     # will render app/views/movies/show.<extension> by default
+  end
+  
+  def same_director
+    id = params[:id]
+    @movie = Movie.find(id)
+    
+    @movies_with_the_same_director = @movie.find_all_by_director
+    if @movie.director.blank?
+      flash[:notice] = "'#{@movie.title}' has no director info"
+      redirect_to movies_path
+    end
   end
 
   def index
@@ -30,7 +41,11 @@ class MoviesController < ApplicationController
       session[:ratings] = @selected_ratings
       redirect_to :sort => sort, :ratings => @selected_ratings and return
     end
-    @movies = Movie.where(rating: @selected_ratings.keys).order(ordering)
+    
+    query = {}
+    query[:rating] = @selected_ratings.keys
+    
+    @movies = Movie.where(query).order(ordering)
   end
 
   def new
